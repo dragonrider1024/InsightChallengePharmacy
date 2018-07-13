@@ -1,0 +1,63 @@
+#! /usr/bin/python
+from drug import Drug
+from heap import MaxHeap
+import sys
+from csv import reader,writer
+
+class Solution:
+  
+  def readInput(self, fileInput):
+    '''read input line by line'''
+    columnNames = {"id":0, "prescriber_last":1, "prescriber_first":2, "drug_name":3, "drug_cost":4}
+    try:
+      columnValueString = next(fileInput)
+    except StopIteration:
+      return None
+    entryid = columnValueString[columnNames["id"]]
+    last = columnValueString[columnNames["prescriber_last"]]
+    first = columnValueString[columnNames["prescriber_first"]]
+    drug_name = columnValueString[columnNames["drug_name"]]
+    drug_cost = columnValueString[columnNames["drug_cost"]]
+    return (entryid, last, first, drug_name, drug_cost)
+
+
+  def worker(self):
+    '''worker function to store drugs in a maximum heap'''
+    fileInput = reader(open(sys.argv[1], "r"), delimiter=',')
+    fileOutput = writer(open(sys.argv[2], "w+"), delimiter=',')
+    rowItem = self.readInput(fileInput) # skip the header
+    rowItem = self.readInput(fileInput)
+    maxheap = MaxHeap()
+    drugDict = {}
+    drugPrescriberDict = {}
+    while rowItem != None:
+       entry_id, last, first, drug_name, drug_cost = rowItem
+       drug_cost = int(float(drug_cost))
+       if drug_name not in drugDict:
+         drug = Drug(drug_name, 1, drug_cost)
+         drugDict[drug_name] = drug
+         drugPrescriberDict[(drug_name, last, first)] = drug
+         maxheap.heappush(drug)
+       else:
+         if (drug_name, last, first) not in drugPrescriberDict:
+           drug = drugDict[drug_name]
+           drug.num_pres += 1
+           drugPrescriberDict[(drug_name, last, first)] = drug
+           maxheap.increase_key(drug, drug_cost)
+         else:
+           drug = drugDict[drug_name]
+           maxheap.increase_key(drug, drug_cost)
+       rowItem = self.readInput(fileInput)
+
+    self.saveOutput(maxheap, fileOutput)
+
+  def saveOutput(self, maxheap, fileOutput):
+    header = ["drug_name","num_prescriber","total_cost"]
+    fileOutput.writerow(header)
+    while len(maxheap) != 0:
+       item = maxheap.heappop()
+       fileOutput.writerow([item.drug_name, item.num_pres, item.total_cost])
+
+if __name__ == "__main__":
+  sol = Solution()
+  sol.worker()
